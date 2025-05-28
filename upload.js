@@ -4,7 +4,7 @@ const path = require("path");
 const fs = require("fs");
 const app = express();
 
-const PORT = 4567; // bebas, bisa disesuaikan
+const PORT = 7878; // bebas, bisa disesuaikan
 
 // Storage config: simpan file ke /var/www/files
 const storage = multer.diskStorage({
