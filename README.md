@@ -80,14 +80,3 @@ Klik tombol **Send** untuk mengirim file ke server.
 }
 ```
 
-```markdown
-Kamu bisa menggunakan URL tersebut untuk dikirim ke WhatsApp Gateway seperti ini:
-```
-
-```json
-{
-  "number": "6281234567890",
-  "filePath": "http://<IP-VPS>/uploads/invoice.pdf",
-  "caption": "Berikut file invoice Anda"
-}
-```
