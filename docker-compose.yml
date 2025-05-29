@@ -1,26 +1,14 @@
 version: "3.8"
 
 services:
-  uploader:
-    build: ./uploader
-    container_name: file-upload-api
+  app:
+    build: .
+    container_name: express-upload-app
     ports:
-      - "1234:1234"
+      - "6969:6969"
+    volumes:
+      - ./storage:/usr/src/app/storage # Mount folder storage
+      - ./src:/usr/src/app/src # Mount folder src (opsional)
     environment:
-      - PUBLIC_URL=http://localhost
-    volumes:
-      - files-data:/var/www/files
+      - NODE_ENV=development
     restart: unless-stopped
-
-  nginx:
-    image: nginx:latest
-    container_name: nginx-fileserver
-    ports:
-      - "80:80"
-    volumes:
-      - files-data:/var/www/files
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
-    restart: unless-stopped
-
-volumes:
-  files-data:
