@@ -1,0 +1,18 @@
+version: "3.8"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: express-upload-prod
+    ports:
+      - "6969:6969"
+    volumes:
+      - uploads:/usr/src/app/storage
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+
+volumes:
+  uploads:
