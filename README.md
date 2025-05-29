@@ -18,4 +18,10 @@ docker-compose up --build -d
 docker-compose up -d
 ```
 
-### change in docker file ip your vps
+### change in dockerfile file ip your vps
+
+## author
+
+```bash
+alfitosantosa
+```
