@@ -80,9 +80,9 @@ Klik tombol **Send** untuk mengirim file ke server.
 }
 ```
 
-````
-
+```markdown
 Kamu bisa menggunakan URL tersebut untuk dikirim ke WhatsApp Gateway seperti ini:
+```
 
 ```json
 {
@@ -91,13 +91,3 @@ Kamu bisa menggunakan URL tersebut untuk dikirim ke WhatsApp Gateway seperti ini
   "caption": "Berikut file invoice Anda"
 }
 ```
-
----
-
-> Jika kamu ingin file Insomnia Collection (`.json`) siap pakai, tinggal minta saja dan saya bantu buatkan 👍
-
-```
-
-Silakan salin bagian ini langsung ke `README.md` kamu. Jika kamu ingin, saya juga bisa bantu menambahkan bagian sebelumnya atau menyusun `README.md` lengkap dari awal hingga akhir.
-```
-````
