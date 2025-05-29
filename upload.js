@@ -1,17 +1,14 @@
 const express = require("express");
 const multer = require("multer");
-// const path = require("path");
-// const fs = require("fs");
+const path = require("path");
+
 const app = express();
+const PORT = process.env.PORT || 1234;
 
-const PORT = 7878; // bebas, bisa disesuaikan
-
-// Storage config: simpan file ke /var/www/files
+// Storage config: simpan ke /var/www/files (folder Nginx public)
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "/var/www/files");
-  },
-  filename: function (req, file, cb) {
+  destination: "/var/www/files",
+  filename: (req, file, cb) => {
     const uniqueName = Date.now() + "-" + file.originalname;
     cb(null, uniqueName);
   },
@@ -20,11 +17,10 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 app.post("/upload", upload.single("file"), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: "No file uploaded" });
-  }
+  if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
-  const fileUrl = `http://YOUR_SERVER_IP/files/${req.file.filename}`;
+  const server = process.env.PUBLIC_URL || "http://localhost";
+  const fileUrl = `${server}/files/${req.file.filename}`;
   res.json({ success: true, url: fileUrl });
 });
 
