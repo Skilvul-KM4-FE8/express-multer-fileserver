@@ -5,7 +5,7 @@ services:
     build: ./uploader
     container_name: file-upload-api
     ports:
-      - "4567:4567"
+      - "1234:1234"
     environment:
       - PUBLIC_URL=http://localhost
     volumes:

@@ -7,9 +7,9 @@ RUN npm install
 
 COPY . .
 
-ENV PORT=4567
+ENV PORT=1234
 ENV PUBLIC_URL=http://your-vps-ip
 
-EXPOSE 4567
+EXPOSE 1234
 
 CMD ["npm", "start"]
