@@ -13,10 +13,11 @@ app.use(
     origin: "*", // Mengizinkan semua domain
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // Semua method yang diizinkan
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"], // Semua headers yang diizinkan
-    credentials: true, // Izinkan credentials jika diperlukan
+    credentials: false, // Izinkan credentials jika diperlukan
     optionsSuccessStatus: 200, // Untuk browser yang kompatibel
   })
 );
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
