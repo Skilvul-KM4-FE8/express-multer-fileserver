@@ -1,5 +1,7 @@
 # express-multer-fileserver
 
+> Dokumentasi integrasi (endpoint, contoh fetch/axios, batasan, jebakan): [`docs/README.md`](docs/README.md)
+
 ## how to install in your VPS
 
 ### create fileserver in root
