@@ -10,8 +10,21 @@ services:
       - "6969:6969"
     volumes:
       - uploads:/usr/src/app/storage
+    env_file:
+      - .env # PORT + DATABASE_URL (Prisma)
     environment:
       - NODE_ENV=production
+    restart: unless-stopped
+
+  dashboard:
+    build: ./dashboard
+    container_name: file-usage-dashboard-prod
+    ports:
+      - "5173:4173"
+    environment:
+      - API_PROXY=http://app:6969
+    depends_on:
+      - app
     restart: unless-stopped
 
 volumes:

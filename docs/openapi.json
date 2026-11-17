@@ -1,0 +1,378 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "File Server API",
+    "version": "1.0.0",
+    "description": "Upload, list, download, dan hapus file. Express 5 + Multer disk storage. Semua endpoint publik (tanpa auth)."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:6969",
+      "description": "Dev"
+    }
+  ],
+  "tags": [
+    { "name": "Files", "description": "Upload dan kelola file" },
+    { "name": "Stats", "description": "Statistik pemakaian file" },
+    { "name": "System", "description": "Health check dan dokumentasi" }
+  ],
+  "paths": {
+    "/api/upload": {
+      "post": {
+        "tags": ["Files"],
+        "summary": "Upload satu file",
+        "description": "Menyimpan file dengan nama `file-<epoch>-<random><ext>`: ke bucket S3/R2 bila env `S3_*` lengkap, kalau tidak ke `storage/uploads/`. Ekstensi yang diizinkan: jpeg, jpg, png, gif, pdf, ico, svg, doc, docx, txt. Maksimal 5MB.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": { "type": "string", "format": "binary" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "File berhasil diunggah",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "const": true },
+                    "message": { "type": "string" },
+                    "data": { "$ref": "#/components/schemas/FileInfo" },
+                    "fileUrl": { "type": "string", "format": "uri" }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "message": "File berhasil diunggah",
+                  "data": {
+                    "filename": "file-1794744007965-187349859.png",
+                    "originalname": "invoice.png",
+                    "mimetype": "image/png",
+                    "size": 2056,
+                    "storage": "s3",
+                    "path": null,
+                    "createdAt": "2026-11-15T12:00:07.977Z"
+                  },
+                  "fileUrl": "http://localhost:6969/storage/uploads/file-1794744007965-187349859.png"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Tidak ada file, ekstensi tidak diizinkan, atau ukuran > 5MB",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" },
+                "examples": {
+                  "noFile": {
+                    "value": { "success": false, "message": "Tidak ada file yang diunggah" }
+                  },
+                  "badExt": {
+                    "value": {
+                      "success": false,
+                      "message": "Hanya file dengan ekstensi berikut yang diperbolehkan: /jpeg|jpg|png|gif|pdf|ico|svg|doc|docx|txt/"
+                    }
+                  },
+                  "tooLarge": {
+                    "value": { "success": false, "message": "Ukuran file terlalu besar. Maksimal 5MB" }
+                  }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/files": {
+      "get": {
+        "tags": ["Files"],
+        "summary": "List nama file",
+        "description": "Hanya nama file (flat array string). Tanpa ukuran, tanggal, atau mimetype.",
+        "responses": {
+          "200": {
+            "description": "Daftar nama file",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "const": true },
+                    "data": { "type": "array", "items": { "type": "string" } }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "data": [
+                    "file-1794744007965-187349859.png",
+                    "file-1794744027117-2640683.jpg"
+                  ]
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/files/{filename}": {
+      "parameters": [
+        {
+          "name": "filename",
+          "in": "path",
+          "required": true,
+          "schema": { "type": "string" },
+          "example": "file-1794744007965-187349859.png"
+        }
+      ],
+      "get": {
+        "tags": ["Files"],
+        "summary": "Download file (attachment)",
+        "description": "Selalu `application/octet-stream` dengan `Content-Disposition: attachment`. Setiap download menaikkan `accessCount`. Untuk preview inline pakai `/storage/uploads/{filename}`.",
+        "responses": {
+          "200": {
+            "description": "Isi file",
+            "content": { "application/octet-stream": { "schema": { "type": "string", "format": "binary" } } }
+          },
+          "404": {
+            "description": "File tidak ditemukan",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" },
+                "example": { "success": false, "message": "File tidak ditemukan" }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
+      "delete": {
+        "tags": ["Files"],
+        "summary": "Hapus file",
+        "description": "Menghapus file dari disk dan baris metadata di `file_records`.",
+        "responses": {
+          "200": {
+            "description": "File berhasil dihapus",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "const": true },
+                    "message": { "type": "string" }
+                  }
+                },
+                "example": { "success": true, "message": "File berhasil dihapus" }
+              }
+            }
+          },
+          "404": {
+            "description": "File tidak ditemukan",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" },
+                "example": { "success": false, "message": "File tidak ditemukan" }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/stats": {
+      "get": {
+        "tags": ["Stats"],
+        "summary": "Statistik pemakaian file",
+        "description": "Disk (`storage/uploads/`) adalah sumber kebenaran daftar file; Postgres hanya menyimpan metadata akses. File tanpa row DB dianggap `unused`.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "description": "Jendela waktu untuk menandai file tidak terpakai",
+            "schema": { "type": "integer", "minimum": 1, "default": 60 },
+            "example": 60
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Statistik pemakaian",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "const": true },
+                    "data": { "$ref": "#/components/schemas/Stats" }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "data": {
+                    "days": 60,
+                    "summary": {
+                      "totalFiles": 4,
+                      "totalSize": 280,
+                      "unusedFiles": 3,
+                      "unusedSize": 210,
+                      "neverAccessed": 3
+                    },
+                    "files": [
+                      {
+                        "filename": "file-1794746475197-836274007.png",
+                        "size": 70,
+                        "uploadedAt": "2026-11-15T12:41:15.203Z",
+                        "lastAccessedAt": "2026-11-15T12:41:20.000Z",
+                        "accessCount": 1,
+                        "unused": false
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Health check",
+        "responses": {
+          "200": {
+            "description": "Server hidup",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "const": true },
+                    "message": { "type": "string" }
+                  }
+                },
+                "example": { "success": true, "message": "Server is healthy" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/openapi.json": {
+      "get": {
+        "tags": ["System"],
+        "summary": "OpenAPI spec (JSON)",
+        "description": "Spec yang dipakai halaman dokumentasi ini.",
+        "responses": {
+          "200": {
+            "description": "Dokumen OpenAPI 3.1",
+            "content": { "application/json": { "schema": { "type": "object" } } }
+          }
+        }
+      }
+    },
+    "/storage/uploads/{filename}": {
+      "parameters": [
+        {
+          "name": "filename",
+          "in": "path",
+          "required": true,
+          "schema": { "type": "string" },
+          "example": "file-1794744007965-187349859.png"
+        }
+      ],
+      "get": {
+        "tags": ["Files"],
+        "summary": "Serve file inline",
+        "description": "Serve inline dengan content-type asli — static dari `storage/uploads/`, dan di-proxy dari bucket bila file hanya ada di S3/R2. Setiap akses `200` (termasuk dari `<img src>`) menaikkan `accessCount`, jadi cron tidak menghapus file yang masih dipanggil.",
+        "responses": {
+          "200": {
+            "description": "Isi file",
+            "content": { "application/octet-stream": { "schema": { "type": "string", "format": "binary" } } }
+          },
+          "404": { "description": "File tidak ada" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "FileInfo": {
+        "type": "object",
+        "properties": {
+          "filename": { "type": "string", "description": "Nama file yang disimpan — nilai yang harus disimpan di DB kamu" },
+          "originalname": { "type": "string" },
+          "mimetype": { "type": "string" },
+          "size": { "type": "integer", "description": "Byte" },
+          "storage": {
+            "type": "string",
+            "enum": ["local", "s3"],
+            "description": "Backend tempat file baru disimpan (s3 = Cloudflare R2/S3-compatible)"
+          },
+          "path": { "type": ["string", "null"], "description": "Path absolut di server; null bila file di bucket" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Stats": {
+        "type": "object",
+        "properties": {
+          "days": { "type": "integer" },
+          "summary": {
+            "type": "object",
+            "properties": {
+              "totalFiles": { "type": "integer" },
+              "totalSize": { "type": "integer" },
+              "unusedFiles": { "type": "integer" },
+              "unusedSize": { "type": "integer" },
+              "neverAccessed": { "type": "integer" }
+            }
+          },
+          "files": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/StatFile" }
+          }
+        }
+      },
+      "StatFile": {
+        "type": "object",
+        "properties": {
+          "filename": { "type": "string" },
+          "size": { "type": "integer" },
+          "uploadedAt": { "type": "string", "format": "date-time" },
+          "lastAccessedAt": { "type": ["string", "null"], "format": "date-time" },
+          "accessCount": { "type": "integer" },
+          "unused": { "type": "boolean" }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "const": false },
+          "message": { "type": "string" },
+          "error": { "type": "string", "description": "Hanya terisi saat NODE_ENV=development" }
+        }
+      }
+    },
+    "responses": {
+      "InternalError": {
+        "description": "Kesalahan server",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": { "success": false, "message": "Terjadi kesalahan pada server" }
+          }
+        }
+      }
+    }
+  }
+}

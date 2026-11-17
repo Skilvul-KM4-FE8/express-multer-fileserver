@@ -1,6 +1,4 @@
-const { create } = require("domain");
 const FileService = require("../services/file.service");
-const path = require("path");
 
 exports.uploadFile = async (req, res, next) => {
   try {
@@ -8,18 +6,23 @@ exports.uploadFile = async (req, res, next) => {
       throw new Error("Tidak ada file yang diunggah");
     }
 
+    const { filename, storage } = await FileService.saveFile(req.file);
+
     // Membuat URL lengkap yang bisa diakses dari frontend
     const baseUrl = `${req.protocol}://${req.get("host")}`;
-    const fileUrl = `${baseUrl}/storage/uploads/${req.file.filename}`;
+    const fileUrl = `${baseUrl}/storage/uploads/${filename}`;
 
     const fileInfo = {
-      filename: req.file.filename,
+      filename,
       originalname: req.file.originalname,
       mimetype: req.file.mimetype,
       size: req.file.size,
-      path: req.file.path,
+      storage,
+      path: storage === "local" ? FileService.localPath(filename) : null,
       createdAt: new Date(),
     };
+
+    FileService.recordUpload({ ...req.file, filename });
 
     res.status(201).json({
       success: true,
@@ -35,7 +38,7 @@ exports.uploadFile = async (req, res, next) => {
 exports.getFile = async (req, res, next) => {
   try {
     const { filename } = req.params;
-    const file = FileService.getFile(filename);
+    const file = await FileService.getFile(filename);
 
     if (!file) {
       return res.status(404).json({
@@ -46,7 +49,18 @@ exports.getFile = async (req, res, next) => {
 
     res.setHeader("Content-Type", "application/octet-stream");
     res.setHeader("Content-Disposition", `attachment; filename=${filename}`);
+    FileService.recordAccess(filename, file.size);
     file.stream.pipe(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.stats = async (req, res, next) => {
+  try {
+    const days = Number.parseInt(req.query.days, 10) || 60;
+    const data = await FileService.stats(days);
+    res.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
   }
@@ -54,7 +68,7 @@ exports.getFile = async (req, res, next) => {
 
 exports.listFiles = async (req, res, next) => {
   try {
-    const files = FileService.listFiles();
+    const files = await FileService.listFiles();
     res.status(200).json({
       success: true,
       data: files,
@@ -67,7 +81,7 @@ exports.listFiles = async (req, res, next) => {
 exports.deleteFile = async (req, res, next) => {
   try {
     const { filename } = req.params;
-    const result = FileService.deleteFile(filename);
+    const result = await FileService.deleteFile(filename);
 
     if (!result) {
       return res.status(404).json({

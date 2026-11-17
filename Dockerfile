@@ -7,11 +7,17 @@ WORKDIR /usr/src/app
 # Copy package.json dan package-lock.json
 COPY package*.json ./
 
+# Schema Prisma wajib ada sebelum install (postinstall generate client)
+COPY prisma ./prisma
+
 # Install dependencies
 RUN npm install
 
 # Copy semua file aplikasi
 COPY . .
+
+# Generate Prisma Client
+RUN npx prisma generate
 
 # Buat folder storage jika belum ada
 RUN mkdir -p /usr/src/app/storage/uploads

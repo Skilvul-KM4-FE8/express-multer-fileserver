@@ -9,6 +9,19 @@ services:
     volumes:
       - ./storage:/usr/src/app/storage # Mount folder storage
       - ./src:/usr/src/app/src # Mount folder src (opsional)
+    env_file:
+      - .env # PORT + DATABASE_URL (Prisma)
     environment:
       - NODE_ENV=development
+    restart: unless-stopped
+
+  dashboard:
+    build: ./dashboard
+    container_name: file-usage-dashboard
+    ports:
+      - "5173:4173"
+    environment:
+      - API_PROXY=http://app:6969
+    depends_on:
+      - app
     restart: unless-stopped

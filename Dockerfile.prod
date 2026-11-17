@@ -4,9 +4,14 @@ WORKDIR /usr/src/app
 
 COPY package*.json ./
 
-RUN npm install --only=production
+# Schema Prisma wajib ada sebelum install (postinstall generate client)
+COPY prisma ./prisma
+
+RUN npm install
 
 COPY . .
+
+RUN npx prisma generate
 
 RUN mkdir -p /usr/src/app/storage/uploads
 

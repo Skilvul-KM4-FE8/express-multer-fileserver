@@ -2,6 +2,18 @@
 
 > Dokumentasi integrasi (endpoint, contoh fetch/axios, batasan, jebakan): [`docs/README.md`](docs/README.md)
 
+## dashboard pemakaian file
+
+Vite + Vanilla JS, data dari `GET /api/stats?days=60`. Metrik akses disimpan di Postgres lewat Prisma (`file_records`).
+
+```bash
+bun install && bunx prisma db push   # sekali, bikin tabel
+bun run dev                          # API :6969
+bun run dev:dashboard                # dashboard :5173
+```
+
+Yang ditandai **tidak terpakai** = tidak pernah diakses dalam N hari terakhir — kandidat hapus.
+
 ## how to install in your VPS
 
 ### create fileserver in root
