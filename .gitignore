@@ -1,6 +1,12 @@
 node_modules
 npm-debug.log
-uploads
+*.log
+.DS_Store
+
+# Secrets & runtime data
 .env
-dashboard/node_modules
+.env.*
+storage/
+
+# Dashboard build output
 dashboard/dist
